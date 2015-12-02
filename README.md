@@ -42,3 +42,5 @@ talk about how to figure out when to use a has many through and the convetions f
 remind them that once you have a has many through you have access to all the same methods as a has many
 
 talk about the SQL implications for has_many through - how many rows get created, etc.
+
+<a href='https://learn.co/lessons/activerecord-associations-review' data-visibility='hidden'>View this lesson on Learn.co</a>
