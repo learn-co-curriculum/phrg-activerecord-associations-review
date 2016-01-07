@@ -47,69 +47,356 @@ Would mean you could find a post's author with the following ActiveRecord query:
 Author.find(@post.author_id)
 ```
 
+Which is equivalent to the SQL:
+
+```sql
+SELECT * FROM authors WHERE id = #{@post.author_id}
+```
+
 And you could lookup an author's posts like this:
 
 ```ruby
 Post.where("author_id = ?", @author.id)
 ```
 
-That's all great, but Rails is always looking for ways to save us keystrokes. By
-using ActiveRecord's macro-style association class methods, we can add some
+Which is equivalent to the SQL:
+
+```sql
+SELECT * FROM posts WHERE author_id = #{@author.id}
+```
+
+This is all great, but Rails is always looking for ways to save us keystrokes.
+
+# Many-to-One Relationships
+
+By using ActiveRecord's macro-style association class methods, we can add some
 convenient instance methods to our models.
 
-Here are the `Post` and `Author` classes with their associations defined:
+The most common relationship is **many-to-one**, and it is declared in
+ActiveRecord with `belongs_to` and `has_many`.
+
+## `belongs_to`
+
+Each `Post` is associated with **one** `Author`.
 
 ```ruby
 class Post < ActiveRecord::Base
   belongs_to :author
 end
+```
 
+We now have access to some new instance methods, like `author`:
+
+```ruby
+@post.author_id = 5
+@post.author #=> #<Author id=5>
+```
+
+## `has_many`
+
+In the opposite direction, each `Author` might have zero, one, or many `Post`s.
+We haven't changed the schema of the `authors` table at all; ActiveRecord is
+just going to use `posts.author_id` to do all of the lookups.
+
+```ruby
 class Author < ActiveRecord::Base
   has_many :posts
 end
 ```
 
+Now we can look up an author's posts just as easily:
+
+```ruby
+@author.posts #=> [#<Post id=3>, #<Post id=8>]
+```
+
+Remember, ActiveRecord uses its [Inflector][api_inflector] to switch between
+the singular and plural forms of your models.
+
+Name | Data
+---- | -----
+Model | `Author`
+Table | `authors`
+Foreign Key | `author_id`
+`belongs_to` | `:author`
+`has_many` | `:authors`
+
+Like many other ActiveRecord class methods, the symbol you pass determines the
+name of the instance method that will be defined. So `belongs_to :author` will
+give you `@post.author`, and `has_many :posts` will give you `@author.posts`.
+
+# Convenience Builders
+
+## Building a new item in a collection
+
+If you want to add a new post for an author, you might start this way:
+
+```ruby
+Post.new(author_id: @author.id, title: "Web Development for Cats")
+```
+
+But the association macros save the day again, allowing this instead:
+
+```ruby
+@author.posts.build(title: "Web Development for Cats")
+```
+
+`build` works just like `new`. You can call `create` instead to immediately save
+the new relation to the database.
+
+## Setting a singular association
+
+It's a little bit less intuitive for singular associations, which would look
+like this when done manually:
+
+```ruby
+@post.author = Author.new(name: "Leeroy Jenkins")
+```
+
+In the previous section, `@author.posts` always exists, even if it's empty.
+Here, `@post.author` is `nil` until the author is defined, so ActiveRecord can't
+give us something like `@post.author.build`. Instead, it prepends the attribute
+with `build_` and `create_`:
+
+```ruby
+@post.build_author(name: "Leeroy Jenkins")
+```
+
+These methods are also documented in the [Rails Associations
+guide][guides_associations].
+
+## Collection Convenience
+
+If you add an existing object to a collection association, ActiveRecord will
+conveniently take care of setting the foreign key for you:
+
+```ruby
+@author = Author.find_by(name: "Leeroy Jenkins")
+@author.posts
+#=> []
+@post = Post.new(title: "Web Development for Cats")
+@post.author
+#=> nil
+@author.posts << @post
+@post.author
+#=> #<Author @name="Leeroy Jenkins">
+```
+
+# One-to-One Relationships
+
+Profiles can get pretty complex, so in large applications, it can be a good idea
+to give them their own model. In this case:
+
+- Every author would have one, and only one, profile
+- Every profile would have one, and only one, author.
+
+`belongs_to` makes another appearance in this relationship, but instead of
+`has_many`, the other model is declared with `has_one`.
+
+If you're not sure which model should be declared with which macro, it's usually
+a safe bet to put `belongs_to` on whichever model has the foreign key column in
+its database table.
 
 
-## Notes
+# Many-to-Many Relationships and Join Tables
 
-The rails Guide and the Association documentation can be used heavily here.
+Each author has many posts, each post has one author.
 
-http://guides.rubyonrails.org/association_basics.html
-http://api.rubyonrails.org/classes/ActiveRecord/Associations/ClassMethods.html
+The universe is in balance. We're programmers, so this really disturbs us.
+Let's shake things up and think about tags.
 
-We can use Post belongs to author and author has many posts for the
-has_many/belongs_to, and then we can use post has many tags through posttag for
-the has many through
+- One-to-One doesn't work because a post can have multiple tags.
+- Many-to-One doesn't work because a tag can appear on multiple posts.
+
+Because there is no "owner" model in this relationship, there's also no right
+place to put the foreign key column.
+
+Enter the join table:
+
+`tag_id` | `post_id`
+-------- | ---------
+1        | 1
+2        | 1
+1        | 5
+
+This join table depicts two tags (1 and 2) and two posts (1 and 5). Post 1 has
+both tags, while Post 5 has only one.
+
+Mercifully, ActiveRecord has a migration method for doing exactly this.
+
+```ruby
+create_join_table :posts, :tags
+```
+
+This will create a table called `posts_tags`.
+
+## `has_and_belongs_to_many`
+
+In this simple model, you might think it would be correct to say that a post
+`has_many` tags. You might think a lot of things. But the fact of the matter is,
+when `has_many` goes looking for associated tags, it's going to expect to see a
+`post_id` column on the `tags` table, and it's going to be very unhappy when
+none exists.
+
+Due to the bi-directional nature of the Many-to-Many relationship, another tool
+is required. `Post` must be declared with `has_and_belongs_to_many :tags`, and
+`Tag` must be declared with `has_and_belongs_to_many :posts`.
+
+Once you have connected these dots for ActiveRecord, you will be able to use the
+collection methods introduced with `has_many` and go about your business as
+usual.
+
+One interesting thing about this approach is that **the join table still
+represents a model**. Defining this model is optional, but can be accomplished
+like so:
+
+```ruby
+# app/models/posts_tag.rb
+
+class PostsTag < ActiveRecord::Base
+  belongs_to :post
+  belongs_to :tag
+end
+```
+
+Notice that the model is called `PostsTag`, **not** `PostTag`. This is
+because the inflector doesn't know how to un-pluralize both names at once; just
+the one that comes at the end of the name. If we named our model `PostTag`,
+Rails would be looking for a nonexistant database table called `post_tags`, and
+no one wants that.
+
+This will prove useful if we need to add callbacks, validations, or other
+features that are specific to the `Post <-> Tag` relationship. For example, if
+we wanted to keep track of *when* a tag was added, that information would be
+stored on the `PostsTag` model.
+
+Notice that this is consistent with our previous guideline on where to put the
+`belongs_to` statement: this table contains both foreign keys, so it gets both
+of the `belongs_to` macros!
+
+You can create new associations with `@post.tags <<` or vice-versa, but having
+direct access to the join model also lets you create associations like so:
+
+```ruby
+PostsTag.new(post: @post, tag: Tag.find_by(name: "clickbait"))
+```
 
 
-this should be entirely in regards to AR and can move pretty fast / provide
-summary as they technically already covered this material.
+# `has_many :through`
 
-foreign keys - start with covering the required fks.  show the macros, has_many,
-belongs_to, discuss that the macros are convention oriented, remind them of how
-to figure out what option to pass.
+We're not out of the woods yet. There's one more type of common relationship
+that Rails gives us some convenient tools to work with.
 
-talk about the macros simply adding methods, let's star twith the belongs to. I
-think the belongs_to documentation can almost be used verbatim.
-http://api.rubyonrails.org/classes/ActiveRecord/Associations/ClassMethods.html#method-i-belongs_to
+If you want to create a tag cloud for an author, you'll need a list of every tag
+they've used on each post.
 
-same thing with has_many, define it in the context of understanding the behavoir
-that is being added to the model.
+Or, "every tag associated with a post made by this author".
 
-http://api.rubyonrails.org/classes/ActiveRecord/Associations/ClassMethods.html#method-i-has_many
+In SQL, this requires some garlic and crosses, but is still doable:
 
-has_many, through talk about how to figure out when to use a has many through
-and the convetions for the join table, the fk columns, and how to correctly
-create the associations.
+```sql
+SELECT * FROM tags t
+  INNER JOIN posts_tags pt
+    ON t.id = pt.tag_id
+  INNER JOIN posts p
+    ON p.id = pt.post_id
+  WHERE p.author_id = #{@author.id}
+```
 
-remind them that once you have a has many through you have access to all the
-same methods as a has many
+It takes a little bit less typing and a little bit more finagling using
+ActiveRecord's query interface:
 
-talk about the SQL implications for has_many through - how many rows get
-created, etc.
+```ruby
+Tag.joins(:posts_tags, :posts).where(posts: {author_id: @author.id})
+```
+
+But, as promised, ActiveRecord comes through again with the infamous `has_many
+:through` macro option:
+
+```ruby
+class Author < ActiveRecord::Base
+  has_many :posts
+  has_many :tags, :through => :posts
+end
+
+@author = Author.find_by(name: "Leeroy Jenkins")
+@author.tags
+#=> [#<Tag id=2>, #<Tag id=3>]
+```
+
+The Rails Guide has a [very handy flowchart][guides_has_many_through] to help
+visualize this type of relationship.
+
+
+# The Similarity of `has_many :through` and `has_and_belongs_to_many`
+
+There's something interesting happening with our last two examples.
+
+The Posts <-> Tags relationship is described with three models: `Post`, `Tag`,
+and `PostsTag`. (Remember, that last one is the model that represents the join
+table.)
+
+The Authors <-> Tags relationship is *also* described with three models:
+`Author`, `Post`, and `Tag`.
+
+It turns out that our initial approach to associating posts and tags:
+
+```ruby
+class Post
+  has_and_belongs_to_many :tags
+end
+
+class Tag
+  has_and_belongs_to_many :posts
+end
+```
+
+... can be implemented identically using `has_many :through`:
+
+```ruby
+class Post
+  has_many :posts_tags
+  has_many :tags, through: :posts_tags
+end
+
+class PostsTag
+  belongs_to :post
+  belongs_to :tag
+end
+
+class Tag
+  has_many :posts_tags
+  has_many :posts, through: :posts_tags
+end
+```
+
+Why would you want to do it this way? Same as before: it's likely that we'll
+need to do something else with the association itself, like validation or extra
+timestamp storage, and having direct access to a join model is the only way to
+accomplish such a feat.
+
+
+# Summary
+
+For every relationship, there is a foreign key somewhere. Foreign keys
+correspond to the `belong_to` macro on the model.
+
+One-to-one and many-to-one relationships only require a single foreign key, on
+the "subordinate" or "owned" model. The other model declares its relationship
+with `has_one` or `has_many`, respectively.
+
+Many-to-many relationships require a join table, with a foreign key for both
+models.
+
+Simple many-to-many relationships are declared with `has_and_belongs_to_many`,
+while complex many-to-many relationships that require access to the join model
+itself are declared with `has_many :through`.
+
+You can see the entire [list of class methods][api_associations_class_methods]
+in the Rails API docs.
 
 [guides_associations]: http://guides.rubyonrails.org/association_basics.html
+[guides_has_many_through]: http://guides.rubyonrails.org/association_basics.html#the-has-many-through-association
 [api_associations_class_methods]: http://api.rubyonrails.org/classes/ActiveRecord/Associations/ClassMethods.html
 [api_inflector]: http://api.rubyonrails.org/classes/ActiveSupport/Inflector.html
 
