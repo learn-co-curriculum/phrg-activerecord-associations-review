@@ -26,7 +26,7 @@ After this lesson, you will be able to...
 
 It all starts in the database. **Foreign keys** are columns that refer to the
 primary key of another table. Conventionally, foreign keys in ActiveRecord are
-comprised of the name of the model you're referencing, and `_id`.
+comprised of the name of the model you're referencing, and `_id`. So for example if the foreign key was for a `posts` table it would be `posts_id`.
 
 Like any other column, foreign keys are accessible through instance methods of
 the same name. For example, a migration that looks like this:
@@ -85,7 +85,7 @@ class Post < ActiveRecord::Base
 end
 ```
 
-We now have access to some new instance methods, like `author`:
+We now have access to some new instance methods, like `author`. This will return the actual `author` object that is attached to that `@post`.
 
 ```ruby
 @post.author_id = 5
@@ -132,35 +132,36 @@ give you `@post.author`, and `has_many :posts` will give you `@author.posts`.
 If you want to add a new post for an author, you might start this way:
 
 ```ruby
-Post.new(author_id: @author.id, title: "Web Development for Cats")
+new_post = Post.new(author_id: @author.id, title: "Web Development for Cats")
+new_post.save
 ```
 
 But the association macros save the day again, allowing this instead:
 
 ```ruby
-@author.posts.build(title: "Web Development for Cats")
+new_post = @author.posts.build(title: "Web Development for Cats")
+new_post.save
 ```
 
-`build` works just like `new`. You can call `create` instead to immediately save
-the new relation to the database.
+Ths will return a new `post` object with the `author_id` already set for you! We use this one as much as possible because it's just easier. `build` works just like `new`. So the instance that is returned isn't quite saved to the database just yet. You'll need to `#save` the instance when you want it to be persisted to the databse.
 
 ## Setting a singular association
 
-It's a little bit less intuitive for singular associations, which would look
-like this when done manually:
+It's a little bit less intuitive for singular associations. Remember a post `belongs_to` an author. The verbose way of doing this would be like so:
 
 ```ruby
-@post.author = Author.new(name: "Leeroy Jenkins")
+@post.author = Author.new(name: "Leeroy Jenkins") 
 ```
-
-In the previous section, `@author.posts` always exists, even if it's empty.
+In the previous section, `@author.posts` always exists, even if it's an empty array.
 Here, `@post.author` is `nil` until the author is defined, so ActiveRecord can't
 give us something like `@post.author.build`. Instead, it prepends the attribute
-with `build_` and `create_`:
+with `build_` and `create_`. The `create_` will persist to the database for you.
 
 ```ruby
-@post.build_author(name: "Leeroy Jenkins")
+new_author = @post.build_author(name: "Leeroy Jenkins")
 ```
+
+Remeber! you need to save your new `author` with `#save`.
 
 These methods are also documented in the [Rails Associations
 guide][guides_associations].
@@ -230,128 +231,28 @@ create_join_table :posts, :tags
 
 This will create a table called `posts_tags`.
 
-## `has_and_belongs_to_many`
-
-In this simple model, you might think it would be correct to say that a post
-`has_many` tags. You might think a lot of things. But the fact of the matter is,
-when `has_many` goes looking for associated tags, it's going to expect to see a
-`post_id` column on the `tags` table, and it's going to be very unhappy when
-none exists.
-
-Due to the bi-directional nature of the Many-to-Many relationship, another tool
-is required. `Post` must be declared with `has_and_belongs_to_many :tags`, and
-`Tag` must be declared with `has_and_belongs_to_many :posts`.
-
-Once you have connected these dots for ActiveRecord, you will be able to use the
-collection methods introduced with `has_many` and go about your business as
-usual.
-
-One interesting thing about this approach is that **the join table still
-represents a model**. Defining this model is optional, but can be accomplished
-like so:
-
-```ruby
-# app/models/posts_tag.rb
-
-class PostsTag < ActiveRecord::Base
-  belongs_to :post
-  belongs_to :tag
-end
-```
-
-Notice that the model is called `PostsTag`, **not** `PostTag`. This is
-because the inflector doesn't know how to un-pluralize both names at once; just
-the one that comes at the end of the name. If we named our model `PostTag`,
-Rails would be looking for a nonexistant database table called `post_tags`, and
-no one wants that.
-
-This will prove useful if we need to add callbacks, validations, or other
-features that are specific to the `Post <-> Tag` relationship. For example, if
-we wanted to keep track of *when* a tag was added, that information would be
-stored on the `PostsTag` model.
-
-Notice that this is consistent with our previous guideline on where to put the
-`belongs_to` statement: this table contains both foreign keys, so it gets both
-of the `belongs_to` macros!
-
-You can create new associations with `@post.tags <<` or vice-versa, but having
-direct access to the join model also lets you create associations like so:
-
-```ruby
-PostsTag.new(post: @post, tag: Tag.find_by(name: "clickbait"))
-```
-
-
 # `has_many :through`
 
-We're not out of the woods yet. There's one more type of common relationship
-that Rails gives us some convenient tools to work with.
+To work with the join table, both our `Post` and our `Tag` model will `have_many` `post_tags`. But! we still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's what `has_many :through` comes in.
 
-If you want to create a tag cloud for an author, you'll need a list of every tag
-they've used on each post.
-
-Or, "every tag associated with a post made by this author".
-
-In SQL, this requires some garlic and crosses, but is still doable:
-
-```sql
-SELECT * FROM tags t
-  INNER JOIN posts_tags pt
-    ON t.id = pt.tag_id
-  INNER JOIN posts p
-    ON p.id = pt.post_id
-  WHERE p.author_id = #{@author.id}
-```
-
-It takes a little bit less typing and a little bit more finagling using
-ActiveRecord's query interface:
-
-```ruby
-Tag.joins(:posts_tags, :posts).where(posts: {author_id: @author.id})
-```
-
-But, as promised, ActiveRecord comes through again with the infamous `has_many
-:through` macro option:
-
-```ruby
-class Author < ActiveRecord::Base
-  has_many :posts
-  has_many :tags, :through => :posts
-end
-
-@author = Author.find_by(name: "Leeroy Jenkins")
-@author.tags
-#=> [#<Tag id=2>, #<Tag id=3>]
-```
-
-The Rails Guide has a [very handy flowchart][guides_has_many_through] to help
-visualize this type of relationship.
-
-
-# The Similarity of `has_many :through` and `has_and_belongs_to_many`
-
-There's something interesting happening with our last two examples.
-
-The Posts <-> Tags relationship is described with three models: `Post`, `Tag`,
-and `PostsTag`. (Remember, that last one is the model that represents the join
-table.)
-
-The Authors <-> Tags relationship is *also* described with three models:
-`Author`, `Post`, and `Tag`.
-
-It turns out that our initial approach to associating posts and tags:
+To do this requires a bit of focus. But you can do it! First of all, our `Post` and our `Tag` model will `has_many` `posts_tags`.
 
 ```ruby
 class Post
-  has_and_belongs_to_many :tags
+  has_many :posts_tags
+end
+
+class PostsTag
+  belongs_to :post
+  belongs_to :tag
 end
 
 class Tag
-  has_and_belongs_to_many :posts
+  has_many :posts_tags
 end
 ```
 
-... can be implemented identically using `has_many :through`:
+So now we can run code like `@post.posts_tags` to get all the join entries. This is kinda sorta what we want. What we really want is to be able to do `@post.tags`. So! we need one more `has_many` relationship to make the link between tags and posts. This is the `has_many :through`. In english, my `Post` has many `Tags` through the `posts_tags` model. So let's write that:
 
 ```ruby
 class Post
@@ -370,11 +271,7 @@ class Tag
 end
 ```
 
-Why would you want to do it this way? Same as before: it's likely that we'll
-need to do something else with the association itself, like validation or extra
-timestamp storage, and having direct access to a join model is the only way to
-accomplish such a feat.
-
+Now! You can do `@post.tags` and everything should work :)
 
 # Summary
 
@@ -386,11 +283,8 @@ the "subordinate" or "owned" model. The other model declares its relationship
 with `has_one` or `has_many`, respectively.
 
 Many-to-many relationships require a join table, with a foreign key for both
-models.
+models. These are joined using `has_many :through`.
 
-Simple many-to-many relationships are declared with `has_and_belongs_to_many`,
-while complex many-to-many relationships that require access to the join model
-itself are declared with `has_many :through`.
 
 You can see the entire [list of class methods][api_associations_class_methods]
 in the Rails API docs.
