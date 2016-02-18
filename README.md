@@ -143,7 +143,7 @@ new_post = @author.posts.build(title: "Web Development for Cats")
 new_post.save
 ```
 
-Ths will return a new `post` object with the `author_id` already set for you! We use this one as much as possible because it's just easier. `build` works just like `new`. So the instance that is returned isn't quite saved to the database just yet. You'll need to `#save` the instance when you want it to be persisted to the databse.
+This will return a new `post` object with the `author_id` already set for you! We use this one as much as possible because it's just easier. `build` works just like `new`. So the instance that is returned isn't quite saved to the database just yet. You'll need to `#save` the instance when you want it to be persisted to the databse.
 
 ## Setting a singular association
 
@@ -161,7 +161,7 @@ with `build_` and `create_`. The `create_` will persist to the database for you.
 new_author = @post.build_author(name: "Leeroy Jenkins")
 ```
 
-Remeber! you need to save your new `author` with `#save`.
+Remember! you need to save your new `author` with `#save`.
 
 These methods are also documented in the [Rails Associations
 guide][guides_associations].
@@ -296,3 +296,5 @@ in the Rails API docs.
 
 <a href='https://learn.co/lessons/activerecord-associations-review'
 data-visibility='hidden'>View this lesson on Learn.co</a>
+
+<p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>Activerecord Associations Review</a> on Learn.co and start learning to code for free.</p>
