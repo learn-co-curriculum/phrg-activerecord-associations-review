@@ -26,7 +26,7 @@ After this lesson, you will be able to...
 
 It all starts in the database. **Foreign keys** are columns that refer to the
 primary key of another table. Conventionally, foreign keys in ActiveRecord are
-comprised of the name of the model you're referencing, and `_id`. So for example if the foreign key was for a `posts` table it would be `posts_id`.
+comprised of the name of the model you're referencing, and `_id`. So for example if the foreign key was for a `posts` table it would be `post_id`.
 
 Like any other column, foreign keys are accessible through instance methods of
 the same name. For example, a migration that looks like this:
@@ -296,3 +296,5 @@ in the Rails API docs.
 
 <a href='https://learn.co/lessons/activerecord-associations-review'
 data-visibility='hidden'>View this lesson on Learn.co</a>
+
+<p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>Activerecord Associations Review</a> on Learn.co and start learning to code for free.</p>
