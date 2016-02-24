@@ -297,4 +297,4 @@ in the Rails API docs.
 <a href='https://learn.co/lessons/activerecord-associations-review'
 data-visibility='hidden'>View this lesson on Learn.co</a>
 
-<p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>Activerecord Associations Review</a> on Learn.co and start learning to code for free.</p>
+<p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>ActiveRecord Associations Review</a> on Learn.co and start learning to code for free.</p>
