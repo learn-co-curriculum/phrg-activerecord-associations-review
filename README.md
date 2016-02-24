@@ -233,7 +233,7 @@ This will create a table called `posts_tags`.
 
 # `has_many :through`
 
-To work with the join table, both our `Post` and our `Tag` model will `have_many` `post_tags`. But! we still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's what `has_many :through` comes in.
+To work with the join table, both our `Post` and our `Tag` model will `have_many` `post_tags`. But! We still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's what `has_many :through` comes in.
 
 To do this requires a bit of focus. But you can do it! First of all, our `Post` and our `Tag` model will `has_many` `posts_tags`.
 
@@ -252,7 +252,7 @@ class Tag
 end
 ```
 
-So now we can run code like `@post.posts_tags` to get all the join entries. This is kinda sorta what we want. What we really want is to be able to do `@post.tags`. So! we need one more `has_many` relationship to make the link between tags and posts. This is the `has_many :through`. In english, my `Post` has many `Tags` through the `posts_tags` model. So let's write that:
+So now we can run code like `@post.posts_tags` to get all the join entries. This is kinda sorta what we want. What we really want is to be able to do `@post.tags`. So! We need one more `has_many` relationship to make the link between tags and posts. This is the `has_many :through`. In English, my `Post` has many `Tags` through the `posts_tags` model. So let's write that:
 
 ```ruby
 class Post
@@ -296,3 +296,5 @@ in the Rails API docs.
 
 <a href='https://learn.co/lessons/activerecord-associations-review'
 data-visibility='hidden'>View this lesson on Learn.co</a>
+
+<p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>Activerecord Associations Review</a> on Learn.co and start learning to code for free.</p>
