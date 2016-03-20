@@ -143,7 +143,7 @@ new_post = @author.posts.build(title: "Web Development for Cats")
 new_post.save
 ```
 
-This will return a new `post` object with the `author_id` already set for you! We use this one as much as possible because it's just easier. `build` works just like `new`. So the instance that is returned isn't quite saved to the database just yet. You'll need to `#save` the instance when you want it to be persisted to the databse.
+This will return a new `post` object with the `author_id` already set for you! We use this one as much as possible because it's just easier. `build` works just like `new`. So the instance that is returned isn't quite saved to the database just yet. You'll need to `#save` the instance when you want it to be persisted to the database.
 
 ## Setting a singular association
 
@@ -233,9 +233,9 @@ This will create a table called `posts_tags`.
 
 # `has_many :through`
 
-To work with the join table, both our `Post` and our `Tag` model will `have_many` `post_tags`. But! We still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's what `has_many :through` comes in.
+To work with the join table, both our `Post` and our `Tag` model will `have_many` `post_tags`. But! We still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's where `has_many :through` comes in.
 
-To do this requires a bit of focus. But you can do it! First of all, our `Post` and our `Tag` model will `has_many` `posts_tags`.
+To do this requires a bit of focus. But you can do it! First of all, our `Post` and our `Tag` model will `has_many` `:posts_tags`.
 
 ```ruby
 class Post
@@ -276,7 +276,7 @@ Now! You can do `@post.tags` and everything should work :)
 # Summary
 
 For every relationship, there is a foreign key somewhere. Foreign keys
-correspond to the `belong_to` macro on the model.
+correspond to the `belongs_to` macro on the model.
 
 One-to-one and many-to-one relationships only require a single foreign key, on
 the "subordinate" or "owned" model. The other model declares its relationship
