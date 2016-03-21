@@ -294,7 +294,4 @@ in the Rails API docs.
 [api_associations_class_methods]: http://api.rubyonrails.org/classes/ActiveRecord/Associations/ClassMethods.html
 [api_inflector]: http://api.rubyonrails.org/classes/ActiveSupport/Inflector.html
 
-<a href='https://learn.co/lessons/activerecord-associations-review'
-data-visibility='hidden'>View this lesson on Learn.co</a>
-
 <p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>ActiveRecord Associations Review</a> on Learn.co and start learning to code for free.</p>
