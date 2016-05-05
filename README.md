@@ -210,7 +210,7 @@ This will create a table called `posts_tags`.
 
 # `has_many :through`
 
-To work with the join table, both our `Post` and our `Tag` model will `have_many` `post_tags`. But! We still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's where `has_many :through` comes in.
+To work with the join table, both our `Post` and our `Tag` model will `has_many` `posts_tags`. But! We still need to associate `Post` and `Tag` themselves. I would like to do something like `@my_post.tags` right? That's where `has_many :through` comes in.
 
 To do this requires a bit of focus. But you can do it! First of all, our `Post` and our `Tag` model will `has_many` `:posts_tags`.
 
@@ -267,3 +267,5 @@ You can see the entire [list of class methods][api_associations_class_methods] i
 [api_inflector]: http://api.rubyonrails.org/classes/ActiveSupport/Inflector.html
 
 <p data-visibility='hidden'>View <a href='https://learn.co/lessons/activerecord-associations-review'>ActiveRecord Associations Review</a> on Learn.co and start learning to code for free.</p>
+
+<p class='util--hide'>View <a href='https://learn.co/lessons/activerecord-associations-review'>Activerecord Associations Review</a> on Learn.co and start learning to code for free.</p>
