@@ -262,4 +262,7 @@ You can see the entire [list of class methods][api_associations_class_methods] i
 [api_associations_class_methods]: http://api.rubyonrails.org/classes/ActiveRecord/Associations/ClassMethods.html
 [api_inflector]: http://api.rubyonrails.org/classes/ActiveSupport/Inflector.html
 
+## Does this need an update?
+Please open a [GitHub issue](https://github.com/learn-co-curriculum/phrg-activerecord-associations-review/issues) or [pull-request](https://github.com/learn-co-curriculum/phrg-activerecord-associations-review/pulls). Provide a detailed description that explains the issue you have found or the change you are proposing. Then "@" mention your instructor on the issue or pull-request, and send them a link via Connect.
+
 <p data-visibility='hidden'>PHRG Active Record Associations Review</p>
